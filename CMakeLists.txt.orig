@@ -1,0 +1,14 @@
+#ADD_EXECUTABLE(main main.cpp graph.cpp maxflow.cpp)
+
+VIGRA_ADD_NUMPY_MODULE(svs SHARED
+            python_svs.cpp
+            kolmogorov/block.hpp
+            kolmogorov/graph.hpp
+            kolmogorov/graph.cpp
+            kolmogorov/maxflow.cpp
+            
+  LIBRARIES
+    ${VIGRANUMPY_LIBRARIES} vigranumpy_core stdc++ gomp ${LIS_LIBRARY} gfortran
+  VIGRANUMPY)
+              
+      
