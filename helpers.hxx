@@ -21,8 +21,6 @@
 #include <vigra/numpy_array_converters.hxx>
 #include <vigra/multi_pointoperators.hxx>
 
-#include "tws.hxx"
-
 
 
 namespace vigra

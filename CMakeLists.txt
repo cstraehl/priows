@@ -6,8 +6,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/config)
 find_package(Numpy REQUIRED)
 find_package(Vigra REQUIRED)
 
-cmake_minimum_required(VERSION 2.7)
-
 include_directories(
     ${VIGRA_INCLUDE_DIR}
     ${PYTHON_INCLUDE_DIRS}
