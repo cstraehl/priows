@@ -8,7 +8,7 @@ find_package(Vigra REQUIRED)
 
 include_directories(
     ${VIGRA_INCLUDE_DIR}
-    ${PYTHON_INCLUDE_DIRS}
+    ${PYTHON_INCLUDE_DIR}
     ${PYTHON_NUMPY_INCLUDE_DIR}
 )
 
