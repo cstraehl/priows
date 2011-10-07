@@ -174,7 +174,7 @@ private:
 	std::vector< TYPE_IND > _labelBasins;
 	
 	std::vector< std::vector<PassInfo<TYPE_IND, CT> > > _neighbourhoods;
-	
+	TYPE_IND __basinBorderCount;
 	CT _minimumHeight;
 	CT  _maximumHeight;
 	CT _realMinimumHeight;
@@ -394,6 +394,13 @@ private:
 		}
 	}      
 
+    __basinBorderCount = 0;
+    for(int i = 0; i<_minimaCount; i++) {
+        if(_isAtVolumeBorder[i]) {
+            __basinBorderCount++;
+        }
+    }
+
 
 	//build the watershed graph
 	buildWSGraph();
@@ -486,7 +493,7 @@ void setSeeds(const vigra::MultiArrayView<1, vigra::UInt8, ST>& labelNumbers, co
 
 
 	// determine the basins for each labeled pixel
-	_labelBasins.resize(_minimaCount);
+	_labelBasins.resize(_labelNumbers.size());
 
 	for(TYPE_IND i = 0; i < _labelNumbers.size(); ++i) {
 		TYPE_IND index = _adjustedIndices[i];
@@ -536,28 +543,36 @@ void addVirtualBackgroundSeeds(float bias, float biasThres, unsigned int biasedL
 	queues.resize(_queueCount+1);
 
 
+    
+    
 	for(TYPE_IND i = 0; i < _labelNumbers.size(); ++i) {
 		unsigned char label = _labelNumbers[i];
+        if(label != biasedLabel) {
+            TYPE_IND basin = _labelBasins[i];
+            maxLabel = std::max(label,maxLabel);
 
-		TYPE_IND basin = _labelBasins[i];
-		maxLabel = std::max(label,maxLabel);
+            tempBasinSeedNumber[basin] = label;
+            // add each unlabeled basin bordering a labeled basin to the priority queue
+            AdjacencyListVertex< TYPE_IND, CT >* v = &graphCopy[basin];
+            for(TYPE_IND j=0; j < v->edges.size();++j) {
+            AdjacencyListEdge< TYPE_IND, CT > *e = &v->edges[j];
 
-		tempBasinSeedNumber[basin] = label;
-		// add each unlabeled basin bordering a labeled basin to the priority queue
-		AdjacencyListVertex< TYPE_IND, CT >* v = &graphCopy[basin];
-		for(TYPE_IND j=0; j < v->edges.size();++j) {
-		AdjacencyListEdge< TYPE_IND, CT > *e = &v->edges[j];
-
-		if(tempBasinSeedNumber[e->other] == 0) {
-			int weight = e->min;
-			queues[weight].push(e);
-		}
-		}
+            if(tempBasinSeedNumber[e->other] == 0) {
+                int weight = e->min;
+                queues[weight].push(e);
+            }
+            }
+        }
 	}
 
 	int waterLevel = 0;
-
-
+    
+    std::vector<TYPE_IND> tempBasinWSPosition;
+    tempBasinWSPosition.resize(_minimaCount);
+    TYPE_IND tempViewCount = 0;
+    TYPE_IND __borderCountSeen = 0;
+    TYPE_IND __borderCountSeenCutoff = 0;
+    
 	for(;;){
 		while(!queues[waterLevel].empty()) {
 		// label pixel and remove from queue
@@ -573,6 +588,17 @@ void addVirtualBackgroundSeeds(float bias, float biasThres, unsigned int biasedL
 		if(tempBasinSeedNumber[i] == 0) { //still unlabeled ?
 			tempBasinSeedNumber[i] = tempBasinSeedNumber[e1->here];
 
+            tempBasinWSPosition[i] = tempViewCount;
+            if(_isAtVolumeBorder[i]) {
+                __borderCountSeen++;
+                if((__borderCountSeen > 0.7 * __basinBorderCount)and(__borderCountSeenCutoff == 0)) {
+                    __borderCountSeenCutoff = tempViewCount;
+                }
+            }
+            tempViewCount++;
+            
+            
+            
 			if(tempBasinSeedNumber[i] == 0) {
 				printf("hae?: %d\n", i);
 			}
@@ -585,7 +611,6 @@ void addVirtualBackgroundSeeds(float bias, float biasThres, unsigned int biasedL
 
 			for(TYPE_IND j=0; j < v->edges.size();++j) {
 				e = &(v->edges[j]);
-				if(tempBasinSeedNumber[e->other] == 0) { //unlabeled
 				int weight;
 				if(e->min > biasThres) {
 					weight = std::max(waterLevel, (int)(e->min * factor));
@@ -597,7 +622,6 @@ void addVirtualBackgroundSeeds(float bias, float biasThres, unsigned int biasedL
 				}
 			}
 		}
-		}
 		if(waterLevel==_queueCount){
 		break;
 		}
@@ -608,16 +632,19 @@ void addVirtualBackgroundSeeds(float bias, float biasThres, unsigned int biasedL
 
 
 
-
 	TYPE_IND __count = 0;
 	for(TYPE_IND i=0; i < _minimaCount; ++i) {
-		if(_isAtVolumeBorder[i] and tempBasinSeedNumber[i] == biasedLabel) {
-		_labelNumbers.push_back(biasedLabel);
+//         printf("basin %d: atBorder=%b, position=%d\n", i,_isAtVolumeBorder[i],tempBasinWSPosition[i]);
+		if((_isAtVolumeBorder[i]) and (tempBasinWSPosition[i] > __borderCountSeenCutoff)){//and tempBasinSeedNumber[i] == biasedLabel) {
+        _labelNumbers.push_back(biasedLabel);
 		_labelBasins.push_back(i);
 		basinSeedNumber[i] = biasedLabel;
 		__count++;
 		}
 	}
+    printf("__basinBorderCount: %u\n", __basinBorderCount);
+    printf("__borderCountSeen: %u\n",__borderCountSeen);
+    printf("__borderCountSeenCutoff: %u\n",__borderCountSeenCutoff);
 	printf("Seeded an additional %d number of volume border basins\n", __count);
 }
 
@@ -909,6 +936,7 @@ NumpyAnyArray doWS(float bias, float biasThres, unsigned int biasedLabel, bool v
 		maxLabel = std::max(label,maxLabel);
 
 		basinSeedNumber[basin] = label;
+        printf("setting label %d for basin %d\n",label, basin);
 		// add each unlabeled basin bordering a labeled basin to the priority queue
 		AdjacencyListVertex< TYPE_IND, CT >* v = &graphCopy[basin];
 		for(TYPE_IND j=0; j < v->edges.size();++j) {
