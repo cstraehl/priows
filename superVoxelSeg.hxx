@@ -358,27 +358,27 @@ private:
 	MultiArrayShape<3>::type p(0,0,0);
 
 
-	for(p[2]=0; p[2]<vol.shape(2); p[2]+= vol.shape(2)-1)
+	for(p[2]=0; p[2]<vol.shape(2); p[2]+= std::max((int)vol.shape(2)-1,1))
 	{
 		for(p[1]=0; p[1]<vol.shape(1); ++p[1])
 		{
-		for(p[0]=0; p[0]<vol.shape(0); ++p[0])
-		{
-		TYPE_IND basin = _volumeBasins[p];
-		_isAtVolumeBorder[basin] = true;
-		}
+                  for(p[0]=0; p[0]<vol.shape(0); ++p[0])
+                  {
+                    TYPE_IND basin = _volumeBasins[p];
+                    _isAtVolumeBorder[basin] = true;
+                  }
 		}
 	}
 
 	for(p[2]=0; p[2]<vol.shape(2); ++p[2])
 	{
-		for(p[1]=0; p[1]<vol.shape(1); p[1]+= vol.shape(1)-1)
+		for(p[1]=0; p[1]<vol.shape(1); p[1]+= std::max((int)vol.shape(1)-1,1))
 		{
-		for(p[0]=0; p[0]<vol.shape(0); ++p[0])
-		{
-		TYPE_IND basin = _volumeBasins[p];
-		_isAtVolumeBorder[basin] = true;
-		}
+                  for(p[0]=0; p[0]<vol.shape(0); ++p[0])
+                  {
+                    TYPE_IND basin = _volumeBasins[p];
+                    _isAtVolumeBorder[basin] = true;
+                  }
 		}
 	}
 
@@ -386,11 +386,11 @@ private:
 	{
 		for(p[1]=0; p[1]<vol.shape(1); ++p[1])
 		{
-		for(p[0]=0; p[0]<vol.shape(0); p[0]+= vol.shape(0)-1)
-		{
-		TYPE_IND basin = _volumeBasins[p];
-		_isAtVolumeBorder[basin] = true;
-		}
+                  for(p[0]=0; p[0]<vol.shape(0); p[0]+= std::max((int)vol.shape(0)-1,1))
+                  {
+                    TYPE_IND basin = _volumeBasins[p];
+                    _isAtVolumeBorder[basin] = true;
+                  }
 		}
 	}      
 
